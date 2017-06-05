@@ -6,6 +6,16 @@
  *  tree.
  */
 'use strict';
+
+function warnDeprecated(oldMethod, newMethod) {
+  console.warn(oldMethod + ' is deprecated, please use '
+    + newMethod + ' instead.');
+}
+
+function warnLegacyCallback(method) {
+  console.warn('Please consider using the promise-based version of ' + method);
+}
+
 var safariShim = {
   // TODO: DrAlex, should be here, double check against LayoutTests
 
@@ -19,6 +29,7 @@ var safariShim = {
     }
     if (!('getLocalStreams' in window.RTCPeerConnection.prototype)) {
       window.RTCPeerConnection.prototype.getLocalStreams = function() {
+        warnDeprecated('getLocalStreams', 'getSenders');
         if (!this._localStreams) {
           this._localStreams = [];
         }
@@ -27,6 +38,7 @@ var safariShim = {
     }
     if (!('getStreamById' in window.RTCPeerConnection.prototype)) {
       window.RTCPeerConnection.prototype.getStreamById = function(id) {
+        warnDeprecated('getStreamById', 'getSenders/getReceivers');
         var result = null;
         if (this._localStreams) {
           this._localStreams.forEach(function(stream) {
@@ -48,6 +60,7 @@ var safariShim = {
     if (!('addStream' in window.RTCPeerConnection.prototype)) {
       var _addTrack = window.RTCPeerConnection.prototype.addTrack;
       window.RTCPeerConnection.prototype.addStream = function(stream) {
+        warnDeprecated('addStream', 'addTrack');
         if (!this._localStreams) {
           this._localStreams = [];
         }
@@ -73,6 +86,7 @@ var safariShim = {
     }
     if (!('removeStream' in window.RTCPeerConnection.prototype)) {
       window.RTCPeerConnection.prototype.removeStream = function(stream) {
+        warnDeprecated('removeStream', 'removeTrack');
         if (!this._localStreams) {
           this._localStreams = [];
         }
@@ -97,15 +111,18 @@ var safariShim = {
     }
     if (!('getRemoteStreams' in window.RTCPeerConnection.prototype)) {
       window.RTCPeerConnection.prototype.getRemoteStreams = function() {
+        warnDeprecated('getRemoteStreams', 'getReceivers');
         return this._remoteStreams ? this._remoteStreams : [];
       };
     }
     if (!('onaddstream' in window.RTCPeerConnection.prototype)) {
       Object.defineProperty(window.RTCPeerConnection.prototype, 'onaddstream', {
         get: function() {
+          warnDeprecated('onaddstream', 'onaddtrack');
           return this._onaddstream;
         },
         set: function(f) {
+          warnDeprecated('onaddstream', 'onaddtrack');
           if (this._onaddstream) {
             this.removeEventListener('addstream', this._onaddstream);
             this.removeEventListener('track', this._onaddstreampoly);
@@ -145,6 +162,7 @@ var safariShim = {
       if (!failureCallback) {
         return promise;
       }
+      warnLegacyCallback('createOffer');
       promise.then(successCallback, failureCallback);
       return Promise.resolve();
     };
@@ -155,6 +173,7 @@ var safariShim = {
       if (!failureCallback) {
         return promise;
       }
+      warnLegacyCallback('createAnswer');
       promise.then(successCallback, failureCallback);
       return Promise.resolve();
     };
@@ -164,6 +183,7 @@ var safariShim = {
       if (!failureCallback) {
         return promise;
       }
+      warnLegacyCallback('setLocalDescription');
       promise.then(successCallback, failureCallback);
       return Promise.resolve();
     };
@@ -174,6 +194,7 @@ var safariShim = {
       if (!failureCallback) {
         return promise;
       }
+      warnLegacyCallback('setRemoteDescription');
       promise.then(successCallback, failureCallback);
       return Promise.resolve();
     };
@@ -184,6 +205,7 @@ var safariShim = {
       if (!failureCallback) {
         return promise;
       }
+      warnLegacyCallback('addIceCandidate');
       promise.then(successCallback, failureCallback);
       return Promise.resolve();
     };
@@ -193,11 +215,10 @@ var safariShim = {
     var navigator = window && window.navigator;
 
     if (!navigator.getUserMedia) {
-      if (navigator.webkitGetUserMedia) {
-        navigator.getUserMedia = navigator.webkitGetUserMedia.bind(navigator);
-      } else if (navigator.mediaDevices &&
-          navigator.mediaDevices.getUserMedia) {
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         navigator.getUserMedia = function(constraints, cb, errcb) {
+          warnDeprecated('navigator.getUserMedia',
+            'navigator.mediaDevices.getUserMedia');
           navigator.mediaDevices.getUserMedia(constraints)
           .then(cb, errcb);
         }.bind(navigator);
